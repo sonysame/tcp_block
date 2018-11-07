@@ -43,10 +43,9 @@ void get_mac_address(char * interface, uint8_t * addr){
 					if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0) {
 						memcpy(addr, ifr.ifr_hwaddr.sa_data, 6);   
 						break;
-                	}
-            	}
+                		}
+            		}
         	}
-
     	}
     }
 }
