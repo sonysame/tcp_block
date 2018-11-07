@@ -1,13 +1,13 @@
-all : test
+all : tcp_block
 
-test: main.o
-	g++ -g -o test main.o -lpcap
+tcp_block: main.o
+	g++ -g -o tcp_block main.o -lpcap
 
 main.o:
 	g++ -g -c -o main.o main.cpp
 
 clean:
-	rm -f test
+	rm -f tcp_block
 	rm -f *.o
 
 
