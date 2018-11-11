@@ -277,20 +277,20 @@ int main(int argc, char* argv[])
   u_char * packet2=(u_char*)malloc(sizeof(u_char*)*1514);
 
   while (1) {
-    struct pcap_pkthdr* header;
-    const u_char* packet;
-    int res = pcap_next_ex(handle, &header, &packet);
-    if (res == 0) continue;
-    if (res == -1 || res == -2){
-    	free(fd_rst_packet);
- 	free(bk_rst_packet);
-  	free(fin_packet);
-  	free(packet1);
-  	free(packet2);
-  	pcap_close(handle);
-  	return 0;
-    }
-    check((char *)packet, packet1, packet2, header->caplen, fd_rst_packet, bk_rst_packet, fin_packet, handle);
+  	struct pcap_pkthdr* header;
+  	const u_char* packet;
+    	int res = pcap_next_ex(handle, &header, &packet);
+    	if (res == 0) continue;
+    	if (res == -1 || res == -2){
+    		free(fd_rst_packet);
+ 		free(bk_rst_packet);
+  		free(fin_packet);
+  		free(packet1);
+  		free(packet2);
+  		pcap_close(handle);
+  		return 0;
+    	}
+    	check((char *)packet, packet1, packet2, header->caplen, fd_rst_packet, bk_rst_packet, fin_packet, handle);
   }
   
   free(fd_rst_packet);
