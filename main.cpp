@@ -50,15 +50,16 @@ struct pseudo_header{
 #pragma pack(pop)
 
 const char method[6][10]={"GET","POST","HEAD","PUT","DELETE","OPTIONS"};
-const char warning[9]="blocked/";
+const char warning[9]="blocked";
 
 uint8_t my_mac_address[ETHER_ADDR_LEN];
+uint8_t gateway_mac_address[ETHER_ADDR_LEN];
 
-void print_mac(char * str,u_char * addr){
+void print_mac(char * str,uint8_t * addr){
 	int i;
 	printf("%s: ",str);
-	for(i=0;i<ETHER_ADDR_LEN-1;i++)printf("%02x:",(u_char)*(addr+i));
-	printf("%02x\n",(u_char)*(addr+i));
+	for(i=0;i<ETHER_ADDR_LEN-1;i++)printf("%02x:",*(addr+i));
+	printf("%02x\n",*(addr+i));
 }
 
 void get_ip(char * interface, struct in_addr * ip){
@@ -196,13 +197,13 @@ u_short calc_tcp_sum(u_char * p){
 }
 void make_rst_packet(u_char * p, uint32_t seq, uint32_t ack, uint32_t ip_hlen, uint32_t tcp_hlen, uint32_t option=0){
 	
+	//server
 	/*
 	struct ethernet * eth_ptr=(struct ethernet *)p;
-	if(option)for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=eth_ptr->source_address[i];
+	if(option)for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=gateway_mac_address[i];
 	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->source_address[i]=my_mac_address[i];
-	*/
 	
-	
+	/*
 	if(option){
 		struct ethernet * eth_ptr=(struct ethernet *)p;
 		uint8_t tmp_address[ETHER_ADDR_LEN];
@@ -210,6 +211,13 @@ void make_rst_packet(u_char * p, uint32_t seq, uint32_t ack, uint32_t ip_hlen, u
 		for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=eth_ptr->source_address[i];
 		for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->source_address[i]=tmp_address[i];
 	}
+	*/
+	
+	
+	//client
+	struct ethernet * eth_ptr=(struct ethernet *)p;
+	if(option)for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=eth_ptr->source_address[i];
+	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->source_address[i]=my_mac_address[i];
 	
 
 	struct ip * ip_ptr=(struct ip *)(p+sizeof(struct ethernet));
@@ -245,17 +253,26 @@ void make_rst_packet(u_char * p, uint32_t seq, uint32_t ack, uint32_t ip_hlen, u
 }
 void make_fin_packet(u_char * p, uint32_t seq, uint32_t ack, uint32_t ip_hlen, uint32_t tcp_hlen, uint32_t data_len){
 	
+	//server->my computer portal blocked
 	/*
 	struct ethernet * eth_ptr=(struct ethernet *)p;
-	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=eth_ptr->source_address[i];
+	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=gateway_mac_address[i];
 	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->source_address[i]=my_mac_address[i];
 	*/
-
+	
+	/*
 	struct ethernet * eth_ptr=(struct ethernet *)p;
 	uint8_t tmp_address[ETHER_ADDR_LEN];
 	for(int i=0;i<ETHER_ADDR_LEN;i++)tmp_address[i]=eth_ptr->destination_address[i];
 	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=eth_ptr->source_address[i];
 	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->source_address[i]=tmp_address[i];
+	*/
+	
+	//člient
+	
+	struct ethernet * eth_ptr=(struct ethernet *)p;
+	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=eth_ptr->source_address[i];
+	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->source_address[i]=my_mac_address[i];
 	
 
 	struct ip * ip_ptr=(struct ip *)(p+sizeof(struct ethernet));
@@ -360,9 +377,8 @@ void check(char * p, u_char * packet1, u_char * packet2, int len, u_char * fd_rs
 }			
 
 void usage() {
-	//netstat -r | xargs sudo ./tcp_block wlp1s0
-  printf("syntax: tcp_block <interface>\n");
-  printf("sample: tcp_block wlan0\n");
+  printf("syntax: netstat -r | xargs sudo ./tcp_block <interface>\n");
+  printf("sample: netstat -r | xargs sudo ./tcp_block wlan0\n");
 }
 
 int main(int argc, char* argv[]) 
@@ -382,23 +398,20 @@ int main(int argc, char* argv[])
   	}
   }
 
- // printf("%s\n",gateway_ip_str);
-
   struct in_addr my_ip;
   struct in_addr gateway_ip;
-  u_char gateway_mac_address[ETHER_ADDR_LEN];
+ 
   get_ip(dev, &my_ip);
   get_mac_address(dev, my_mac_address);
   inet_aton(gateway_ip_str,&gateway_ip);
-  printf("%x\n",gateway_ip.s_addr);
+ 
   
   u_char* arp_packet;
   arp_packet=(u_char*)malloc(sizeof(u_char)*sizeof(struct arp_packet));
   make_arp_packet(arp_packet, my_ip, gateway_ip, my_mac_address);
-  //make_arp_packet(arp_packet, my_ip, send_ip[i], my_mac_address);
+ 
   char errbuf[PCAP_ERRBUF_SIZE];
   pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1, errbuf);
-  //pcap_t* handle=pcap_open_offline("./example2.pcapng",errbuf);
   if (handle == NULL) {
     fprintf(stderr, "couldn't open device %s: %s\n", dev, errbuf);
     return -1;
@@ -416,30 +429,29 @@ int main(int argc, char* argv[])
 	}
 	if(check_arp((u_char *)packet, header->caplen, gateway_ip, gateway_mac_address))break;	
   }
-  print_mac("mac",gateway_mac_address);
+
+  //print_mac("mac",gateway_mac_address);
   u_char * fd_rst_packet=(u_char*)malloc(sizeof(u_char)*(sizeof(struct ethernet)+sizeof(struct ip)+sizeof(struct tcphdr)));
   u_char * bk_rst_packet=(u_char*)malloc(sizeof(u_char)*(sizeof(struct ethernet)+sizeof(struct ip)+sizeof(struct tcphdr)));
   u_char * fin_packet=(u_char*)malloc(sizeof(u_char)*(sizeof(struct ethernet)+sizeof(struct ip)+sizeof(struct tcphdr)+strlen(warning)));
   u_char * packet1=(u_char*)malloc(sizeof(u_char*)*1514);
   u_char * packet2=(u_char*)malloc(sizeof(u_char*)*1514);
 
-//  int i=0;
   while (1) {
     struct pcap_pkthdr* header;
     const u_char* packet;
     int res = pcap_next_ex(handle, &header, &packet);
     if (res == 0) continue;
     if (res == -1 || res == -2){
-    	//free(fd_rst_packet);
- 		//free(bk_rst_packet);
-  		//free(fin_packet);
-  		//free(packet1);
-  		//free(packet2);
-  		//pcap_close(handle);
+    	free(fd_rst_packet);
+ 		free(bk_rst_packet);
+  		free(fin_packet);
+  		free(packet1);
+  		free(packet2);
+  		pcap_close(handle);
   		return 0;
    }
 	check((char *)packet, packet1, packet2, header->caplen, fd_rst_packet, bk_rst_packet, fin_packet, handle);
-	//break;
   }
   
   free(fd_rst_packet);
