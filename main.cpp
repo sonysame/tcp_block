@@ -114,7 +114,6 @@ void make_rst_packet(u_char * p, uint32_t seq, uint32_t ack, uint32_t ip_hlen, u
 	if(option)for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=eth_ptr->source_address[i];
 	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->source_address[i]=my_mac_address[i];
 	
-
 	struct ip * ip_ptr=(struct ip *)(p+sizeof(struct ethernet));
 	
 	if(option){	
@@ -131,7 +130,7 @@ void make_rst_packet(u_char * p, uint32_t seq, uint32_t ack, uint32_t ip_hlen, u
 	struct tcphdr * tcp_ptr=(struct tcphdr *)(p+sizeof(struct ethernet)+ip_hlen);
 	if(option){
 		struct tcphdr * tcp_ptr=(struct tcphdr *)(p+sizeof(struct ethernet)+ip_hlen);
-			uint16_t tmp_port=tcp_ptr->th_dport;
+		uint16_t tmp_port=tcp_ptr->th_dport;
 		tcp_ptr->th_dport=tcp_ptr->th_sport;
 		tcp_ptr->th_sport=tmp_port;
 	}
@@ -153,7 +152,6 @@ void make_fin_packet(u_char * p, uint32_t seq, uint32_t ack, uint32_t ip_hlen, u
 	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->destination_address[i]=eth_ptr->source_address[i];
 	for(int i=0;i<ETHER_ADDR_LEN;i++)eth_ptr->source_address[i]=my_mac_address[i];
 	
-
 	struct ip * ip_ptr=(struct ip *)(p+sizeof(struct ethernet));
 	uint32_t tmp_ip=ip_ptr->ip_dst.s_addr;
 	ip_ptr->ip_dst.s_addr=ip_ptr->ip_src.s_addr;
@@ -200,7 +198,6 @@ void check(char * p, u_char * packet1, u_char * packet2, int len, u_char * fd_rs
 			uint32_t seq=tcp_ptr->th_seq;
 			uint32_t ack=tcp_ptr->th_ack;
 			
-			
 			for(i=0;i<6;i++){
 				if(!strncmp(data, method[i],strlen(method[i])))break;
 			}
@@ -209,14 +206,12 @@ void check(char * p, u_char * packet1, u_char * packet2, int len, u_char * fd_rs
 
 				memcpy(packet1,p,len);
 				memcpy(packet2,p,len);
-				
-											
+									
 				make_rst_packet(packet1, htonl(ntohl(seq)+data_len), ack, ip_hlen, tcp_hlen);
 				make_rst_packet(packet2, ack, htonl(ntohl(seq)+data_len), ip_hlen, tcp_hlen,1);
 				
 				memcpy(fd_rstp, packet1, sizeof(struct ethernet)+ip_hlen+tcp_hlen);
 				memcpy(bk_rstp, packet2, sizeof(struct ethernet)+ip_hlen+tcp_hlen);
-
 
 				pcap_inject(fp, fd_rstp, sizeof(struct ethernet)+ip_hlen+tcp_hlen);
 				pcap_inject(fp, bk_rstp, sizeof(struct ethernet)+ip_hlen+tcp_hlen);
@@ -229,7 +224,6 @@ void check(char * p, u_char * packet1, u_char * packet2, int len, u_char * fd_rs
 
 			}
 			else{
-
 				memcpy(packet1,p,len);
 				memcpy(packet2,p,len);
 				
@@ -247,8 +241,6 @@ void check(char * p, u_char * packet1, u_char * packet2, int len, u_char * fd_rs
 
 				memset(packet1, '\x0',len);
 				memset(packet2, '\x0',len);
-
-				
 			}							
 		}
 	}
@@ -291,14 +283,14 @@ int main(int argc, char* argv[])
     if (res == 0) continue;
     if (res == -1 || res == -2){
     	free(fd_rst_packet);
- 		free(bk_rst_packet);
-  		free(fin_packet);
-  		free(packet1);
-  		free(packet2);
-  		pcap_close(handle);
-  		return 0;
-   }
-	check((char *)packet, packet1, packet2, header->caplen, fd_rst_packet, bk_rst_packet, fin_packet, handle);
+ 	free(bk_rst_packet);
+  	free(fin_packet);
+  	free(packet1);
+  	free(packet2);
+  	pcap_close(handle);
+  	return 0;
+    }
+    check((char *)packet, packet1, packet2, header->caplen, fd_rst_packet, bk_rst_packet, fin_packet, handle);
   }
   
   free(fd_rst_packet);
